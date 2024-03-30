@@ -85,7 +85,7 @@ class Worker extends Human {
 
 }
 abstract class Moveable {
-	Player owner;
+	public Player owner;
 	int x,y;
 	int groupSpeed;
 	abstract int getWorkerNumber();
@@ -94,8 +94,10 @@ abstract class Moveable {
 }
 class Soldiers extends Moveable{
 	ArrayList<Soldier> soldiers;
-	Soldiers(Soldier soldier) {
+	Soldiers(Soldier soldier, Player owner) {
+                soldiers = new ArrayList<Soldier>();
 		soldiers.add(soldier);
+                this.owner = owner;
 		if(!Objects.nonNull(owner)){
 			if(!Objects.nonNull(owner.soldiergroups)) owner.soldiergroups = new ArrayList<Soldiers>();
 		}
@@ -124,7 +126,7 @@ class Soldiers extends Moveable{
         void splitGroup(int number, int x, int y) {
             if (soldiers.size() > 1 && number < soldiers.size() && Objects.nonNull(owner.game.world.capturableObjects[x][y].garrison)) {
                 Soldiers newSoldiers;
-                newSoldiers = new Soldiers(soldiers.remove(0));
+                newSoldiers = new Soldiers(soldiers.remove(0), owner);
                 for (int i=0; i< number-1;i++) newSoldiers.addSoldier(soldiers.remove(i));
                 newSoldiers.move(x, y);
             }
@@ -184,35 +186,43 @@ class Neutral extends Faction {
 }
 class Player extends Faction {
 	String name;
-	boolean ready;
+	public boolean ready;
 	Capturable[] capturedObjects;
 	Player(String name) {
 		this.name = name;
+                workergroups = new ArrayList<Workers>();
+                soldiergroups = new ArrayList<Soldiers>();
 	}
 	void setTurn() {
 		ready=true;
 	}
 }
-abstract class Capturable {
+public abstract class Capturable {
     int type = 0;
-    Workers population;
-    Soldiers garrison;
+    public Player owner;
+    public Workers population;
+    public Soldiers garrison;
+    void determineOwner() {
+        if(population!=null) owner = population.owner;
+        if(garrison!=null) owner = garrison.owner;
+    }
     abstract void giveRessources();
 }
-class Grass extends Capturable {
+public class Grass extends Capturable {
     void giveRessources(){};
 }
-class Barracks extends Capturable {
+public class Barracks extends Capturable {
 	void produceSoldier() {
+            determineOwner();
 		if(!Objects.nonNull(garrison)) {
-			garrison = new Soldiers(new Soldier());
+			garrison = new Soldiers(new Soldier(), owner);
 			return;
 		}
 		garrison.addSoldier(new Soldier());
 	}
 	void giveRessources() { }
 }
-class Village extends Capturable {
+public class Village extends Capturable {
     int type = 4;
 	void giveRessources() {
 	if(Objects.nonNull(population)) population.owner.food += 10*population.getWorkerNumber();
@@ -225,19 +235,19 @@ class Village extends Capturable {
 		population.addWorker(new Worker());
 	}
 }
-class Forest extends Capturable {
+public class Forest extends Capturable {
     int type = 2;
     void giveRessources() {
 	if(Objects.nonNull(population)) population.owner.wood += 10*population.getWorkerNumber();
 	}
 }
-class Lake extends Capturable {
+public class Lake extends Capturable {
     int type = 3;  
     void giveRessources() {
         if(Objects.nonNull(population)) population.owner.food += 10*population.getWorkerNumber();
     }
 }
-class Mine extends Capturable {
+public class Mine extends Capturable {
     int type = 1;
     void giveRessources() {
         if(Objects.nonNull(population)) population.owner.gold += 10*population.getWorkerNumber();

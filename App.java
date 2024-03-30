@@ -16,57 +16,36 @@ import javax.swing.JSeparator;
 import javax.swing.SwingConstants;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
+import ginschel.narbrand.GameClass.*;
 /**
  *
  * @author notebook
  */
 public class App implements KeyListener{
+    String path = "C:\\Users\\Alex\\Documents\\NetBeansProjects\\Narbrand\\src\\main\\resources\\icons\\";
+    boolean selected = false; 
+    BuildandRecruit BaR = new BuildandRecruit();
+    GarrisonandWorkers GaW = new GarrisonandWorkers();
+    JFrame window;
+    Player playerblue;
+    Player playerred;
     public App() {
         GameClass g = new GameClass();
         GameClass.Game game = g.new Game(10,10);
 	System.out.println(game);
-        JFrame window = new JFrame();
-        //Image-Icons
-        String path = "C:\\Users\\Alex\\Documents\\NetBeansProjects\\Narbrand\\src\\main\\resources\\icons\\";
-        ImageIcon grass = new ImageIcon(path+"grass.png");
-        ImageIcon lake = new ImageIcon(path+"lake.png");
-        ImageIcon village = new ImageIcon(path+"village.png");
-        ImageIcon forrest = new ImageIcon(path+"forrest.png");
-       ImageIcon mine = new ImageIcon(path+"mine.png");
-        //Map
+        window = new JFrame();
+        //Spieler
+        playerblue=g.new Player("Carolus Rex");
+        playerred= g.new Player("Kazimierz Wielki");
+        game.world.capturableObjects[0][3].garrison = g.new Soldiers(g.new Soldier(),playerblue);
+       //Booleans
+       
+       //Mapvars
         int y = 0; int mapboxwidth = 60; int height = 10;
-        for(int i = 0; i < 100; i++) {
-            JButton test; ImageIcon icon;
-            int temp = game.world.world[i%10][y];
-            //System.out.println(game.world.world[0][0]);
-            //System.out.println(Integer.toString(i) + ": "+Integer.toString(game.world.capturableObjects[i%10][y].type));
-            switch(temp) { 
-                case 1:
-                    icon = mine;
-                    break;
-                case 2:
-                    icon = forrest;
-                    break;
-                case 3:
-                    icon = lake;
-                    break;
-                case 4:
-                    icon = village;
-                    break;
-                default:
-                    icon = grass;
-            }
-            window.add(test =new JButton(icon));
-             test.setBorderPainted(false);
-            if(i%10==0 && i!=0) ++y;
-            test.setBounds(10+mapboxwidth*(i%10), height+5+y*mapboxwidth, mapboxwidth, mapboxwidth);
-            
-            test.addActionListener(e -> System.out.println(Integer.toString(temp)));
-        }
-        //Spielerinformationen
+               //Spielerinformationen
         JLabel player = new JLabel("Player"); 
         player.setBounds(630,height-15, 50, 50);
-        JLabel playername = new JLabel("unknown");
+        JLabel playername = playerblue.ready == false ? new JLabel(playerblue.name) : new JLabel(playerred.name);
         playername.setBounds(630+60,height-15, 100, 50);
         JSeparator sep1 = new JSeparator(SwingConstants.HORIZONTAL); sep1.setBounds(630, height+23, 150, 7);
         window.add(sep1);
@@ -86,11 +65,42 @@ public class App implements KeyListener{
        pl.setBounds(10,620,615,133); pl.jTable1.setBounds(10,620,615,400); 
        
        //Recruitment Window
-       BuildandRecruit BaR = new BuildandRecruit();
+
        BaR.setBounds(620,height+400,160,343); window.add(BaR);
        //Building/Destroy Menu
-       GarrisonandWorkers GaW = new GarrisonandWorkers();
+
        GaW.setBounds(620,height+100,160,300); window.add(GaW);
+       
+        //Map
+
+        for(int i = 0; i < 100; i++) {
+            JButton test; ImageIcon icon =new ImageIcon(path+"grass.png");;
+            int type = game.world.world[i%10][y];
+            //System.out.println(game.world.world[0][0]);
+            //System.out.println(Integer.toString(i) + ": "+Integer.toString(game.world.capturableObjects[i%10][y].type));
+            
+            Capturable capt =game.world.capturableObjects[i%10][y];
+            if(capt.population != null) {
+                if(capt.population.owner == playerblue) icon = getIcon(type,"blue");
+                if(capt.population.owner == playerred) icon = getIcon(type,"red");
+}
+            else if(capt.garrison != null) {
+                  if(capt.garrison.owner ==playerblue) icon = getIcon(type,"blue");
+                    if(capt.garrison.owner == playerred) icon = getIcon(type,"red");
+            }
+            else icon = getIcon(type,"");
+            
+            window.add(test =new JButton(icon));
+             test.setBorderPainted(false);
+            if(i%10==0 && i!=0) ++y;
+            test.setBounds(10+mapboxwidth*(i%10), height+5+y*mapboxwidth, mapboxwidth, mapboxwidth);
+             test.setFocusable(false);
+            test.addActionListener(e -> {System.out.println(Integer.toString(type));
+            BaR.setVisible(true); GaW.setVisible(true);
+            }
+            );
+        }
+
        //Keyboard-Enter Shortcut for next Round
        
        //Deselect Shotcut esc
@@ -112,7 +122,51 @@ public class App implements KeyListener{
     public static void main(String[] args) {
             App app = new App();
     }
-
+    
+    ImageIcon getIcon(int type, String owner) {
+        if(owner == "blue") {
+             switch(type) {
+                case 1:
+                    return new ImageIcon(path+"mineblue.png");
+                case 2:
+                    return new ImageIcon(path+"garrisonforrestblue.png");
+                case 3:
+                    return new ImageIcon(path+"lake.png");
+                case 4:
+                    return new ImageIcon(path+"villageblue.png");
+                default:
+                    return new ImageIcon(path+"grassblue.png");
+            }
+        }
+        else if(owner == "red") {
+             switch(type) {
+                case 1:
+                    return new ImageIcon(path+"minered.png");
+                case 2:
+                    return new ImageIcon(path+"garrisonforrestred.png");
+                case 3:
+                    return new ImageIcon(path+"lake.png");
+                case 4:
+                    return new ImageIcon(path+"villagered.png");
+                default:
+                    return new ImageIcon(path+"grassred.png");
+            }
+        }
+        else {
+             switch(type) {
+                case 1:
+                    return new ImageIcon(path+"mine.png");
+                case 2:
+                    return new ImageIcon(path+"forrest.png");
+                case 3:
+                    return new ImageIcon(path+"lake.png");
+                case 4:
+                    return new ImageIcon(path+"village.png");
+                default:
+                    return new ImageIcon(path+"grass.png");
+            }
+        }
+    }
     @Override
     public void keyTyped(KeyEvent e) {
        
@@ -126,6 +180,7 @@ public class App implements KeyListener{
                     break;
             case 27:
                     System.out.println("Deselect");
+                    this.BaR.setVisible(false); this.GaW.setVisible(false);
                     break;
             default:
         }
