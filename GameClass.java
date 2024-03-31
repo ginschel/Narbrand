@@ -76,10 +76,21 @@ abstract class Human {
 	int speed = 4;
 }
 class Soldier extends Human {
+        int type = 0;
 	int hp = 80;
 	int damage = 20;
 	int speed = 2;
-
+}
+class Infantry extends Soldier {
+    
+}
+class Archery extends Soldier {
+    int type = 1;
+    int speed = 3;
+}
+class Cavalry extends Soldier {
+    int type = 1;
+    int speed = 6;
 }
 class Worker extends Human {
 
@@ -94,6 +105,9 @@ abstract class Moveable {
 }
 class Soldiers extends Moveable{
 	ArrayList<Soldier> soldiers;
+        int infantry = 0;
+        int archery = 0;
+        int cavalry = 0;
 	Soldiers(Soldier soldier, Player owner) {
                 soldiers = new ArrayList<Soldier>();
 		soldiers.add(soldier);
@@ -102,12 +116,62 @@ class Soldiers extends Moveable{
 			if(!Objects.nonNull(owner.soldiergroups)) owner.soldiergroups = new ArrayList<Soldiers>();
 		}
 		owner.soldiergroups.add(this);
+                determineSoldier(true,soldier);
+                
 	}
+        void determineSpeed() {
+            if(infantry!=0) {
+                groupSpeed = 2;
+                return;
+            }
+            if(archery!=0) {
+                groupSpeed =3;
+                return;
+            }
+            if(cavalry!=0) {
+                groupSpeed=6;
+                return;
+            }
+            groupSpeed = 0;
+        }
+        void determineSoldier(boolean plus, Soldier soldier) {
+            if(plus) {
+                switch(soldier.type) {
+                        case 0:
+                            ++infantry;
+                            break;
+                        case 1:
+                            ++archery;
+                            break;
+                        case 2:
+                            ++cavalry;
+                            break;
+                        default:
+                    }
+            }
+            else {
+                switch(soldier.type) {
+                        case 0:
+                            --infantry;
+                            break;
+                        case 1:
+                            --archery;
+                            break;
+                        case 2:
+                            --cavalry;
+                            break;
+                        default:
+                    }
+            }
+        }
         void move(int x, int y) {
-		if(groupSpeed <= Math.abs(this.x-x) && groupSpeed <= Math.abs(this.y-y)) {
+            determineSpeed();  System.out.println(this.x-x);
+		if(groupSpeed >= Math.abs(this.x-x) && groupSpeed >= Math.abs(this.y-y)) {
+                    owner.game.world.capturableObjects[this.x][this.y].determineOwner();
 			this.x = x; this.y=y;
                         if(Objects.nonNull(owner.game.world.capturableObjects[x][y])) {
                             owner.game.world.capturableObjects[x][y].garrison = this; 
+                            System.out.println("gewechselt");
                         }
                         else {
                             System.out.println("Your workergroups are merged together");
@@ -118,6 +182,7 @@ class Soldiers extends Moveable{
 	}
 	void addSoldier(Soldier soldier) {
 		soldiers.add(soldier);
+                determineSoldier(true,soldier);
 	}
         void mergeGroup(Soldiers from, Soldiers to) {
             for(Soldier soldier : from.soldiers) to.addSoldier(soldier);
@@ -127,7 +192,10 @@ class Soldiers extends Moveable{
             if (soldiers.size() > 1 && number < soldiers.size() && Objects.nonNull(owner.game.world.capturableObjects[x][y].garrison)) {
                 Soldiers newSoldiers;
                 newSoldiers = new Soldiers(soldiers.remove(0), owner);
-                for (int i=0; i< number-1;i++) newSoldiers.addSoldier(soldiers.remove(i));
+                for (int i=0; i< number-1;i++) {
+                    determineSoldier(false,soldiers.get(i));
+                    newSoldiers.addSoldier(soldiers.remove(i));
+                }
                 newSoldiers.move(x, y);
             }
         }
@@ -188,8 +256,9 @@ class Player extends Faction {
 	String name;
 	public boolean ready;
 	Capturable[] capturedObjects;
-	Player(String name) {
+	Player(String name,Game game) {
 		this.name = name;
+                this.game = game;
                 workergroups = new ArrayList<Workers>();
                 soldiergroups = new ArrayList<Soldiers>();
 	}

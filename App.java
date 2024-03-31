@@ -29,19 +29,25 @@ public class App implements KeyListener{
     JFrame window;
     Player playerblue;
     Player playerred;
+    String lastButton;
+    GameClass g;
+    GameClass.Game game;
+    JButton[] map;
+    //Mapvars
+    int y = 0; int mapboxwidth = 60; int height = 10;
     public App() {
-        GameClass g = new GameClass();
-        GameClass.Game game = g.new Game(10,10);
+        g = new GameClass();
+        game = g.new Game(10,10);
 	System.out.println(game);
         window = new JFrame();
         //Spieler
-        playerblue=g.new Player("Carolus Rex");
-        playerred= g.new Player("Kazimierz Wielki");
+        playerblue=g.new Player("Carolus Rex",game);
+        playerred= g.new Player("Kazimierz Wielki",game);
         game.world.capturableObjects[0][3].garrison = g.new Soldiers(g.new Soldier(),playerblue);
-       //Booleans
+        game.world.capturableObjects[0][3].determineOwner();
+        //Booleans
        
-       //Mapvars
-        int y = 0; int mapboxwidth = 60; int height = 10;
+
                //Spielerinformationen
         JLabel player = new JLabel("Player"); 
         player.setBounds(630,height-15, 50, 50);
@@ -72,34 +78,8 @@ public class App implements KeyListener{
        GaW.setBounds(620,height+100,160,300); window.add(GaW);
        
         //Map
-
-        for(int i = 0; i < 100; i++) {
-            JButton test; ImageIcon icon =new ImageIcon(path+"grass.png");;
-            int type = game.world.world[i%10][y];
-            //System.out.println(game.world.world[0][0]);
-            //System.out.println(Integer.toString(i) + ": "+Integer.toString(game.world.capturableObjects[i%10][y].type));
-            
-            Capturable capt =game.world.capturableObjects[i%10][y];
-            if(capt.population != null) {
-                if(capt.population.owner == playerblue) icon = getIcon(type,"blue");
-                if(capt.population.owner == playerred) icon = getIcon(type,"red");
-}
-            else if(capt.garrison != null) {
-                  if(capt.garrison.owner ==playerblue) icon = getIcon(type,"blue");
-                    if(capt.garrison.owner == playerred) icon = getIcon(type,"red");
-            }
-            else icon = getIcon(type,"");
-            
-            window.add(test =new JButton(icon));
-             test.setBorderPainted(false);
-            if(i%10==0 && i!=0) ++y;
-            test.setBounds(10+mapboxwidth*(i%10), height+5+y*mapboxwidth, mapboxwidth, mapboxwidth);
-             test.setFocusable(false);
-            test.addActionListener(e -> {System.out.println(Integer.toString(type));
-            BaR.setVisible(true); GaW.setVisible(true);
-            }
-            );
-        }
+        
+       updateMap();
 
        //Keyboard-Enter Shortcut for next Round
        
@@ -122,7 +102,69 @@ public class App implements KeyListener{
     public static void main(String[] args) {
             App app = new App();
     }
-    
+    void updateMap() {
+        if(map!=null) {
+            for(JButton button : map) window.remove(button);
+            map = null;
+        }
+        map = new JButton[100];
+        for(int i = 0; i < 100; i++) {
+            JButton test; ImageIcon icon =new ImageIcon(path+"grass.png");
+            if(i%10==0 && i!=0) y=(y+1)%10;
+            int type = game.world.world[i%10][y];
+            //System.out.println(game.world.world[0][0]);
+            //System.out.println(Integer.toString(i) + ": "+Integer.toString(game.world.capturableObjects[i%10][y].type));
+            
+            Capturable capt =game.world.capturableObjects[i%10][y];
+            if(capt.population != null) {
+                if(capt.population.owner == playerblue) icon = getIcon(type,"blue");
+                if(capt.population.owner == playerred) icon = getIcon(type,"red");
+            }
+            else if(capt.garrison != null) {
+                if(capt.garrison.owner ==playerblue) icon = getIcon(type,"blue");
+                if(capt.garrison.owner == playerred) icon = getIcon(type,"red");
+            }
+            else icon = getIcon(type,"");
+            
+            window.add(test =new JButton(icon));
+             test.setBorderPainted(false);
+            map[i] = test;
+            test.setBounds(10+mapboxwidth*(i%10), height+5+y*mapboxwidth, mapboxwidth, mapboxwidth);
+             test.setFocusable(false); 
+            test.setToolTipText(Integer.toString(i%10)+" "+Integer.toString(y)); 
+            test.addActionListener((e) -> {
+                String[] twovars = test.getToolTipText().split(" "); 
+                System.out.println(twovars[0]+";"+twovars[1]);
+                if(lastButton!=test.getToolTipText() && selected == false) {
+                    
+                    if(game.world.capturableObjects[Integer.valueOf(twovars[0])][Integer.valueOf(twovars[1])].owner == playerblue) {
+                        System.out.println(Integer.toString(type));
+                        System.out.println(game.world.capturableObjects[Integer.valueOf(twovars[0])][Integer.valueOf(twovars[1])].owner.name);
+                        BaR.setVisible(true); GaW.setVisible(true); 
+                        selected = true; lastButton = test.getToolTipText();
+                        setGaW(game.world.capturableObjects[Integer.valueOf(twovars[0])][Integer.valueOf(twovars[1])]);
+                    }
+                }
+                else if(lastButton!=test.getToolTipText() && selected == true) {
+                    String[] twooldvars = lastButton.split(" "); 
+                    Capturable oldcap = game.world.capturableObjects[Integer.valueOf(twooldvars[0])][Integer.valueOf(twooldvars[1])];
+                    if(oldcap.garrison!=null)
+                       oldcap.garrison.move(Integer.valueOf(twovars[0]),Integer.valueOf(twovars[1]));    
+                       //redrawMap
+                       updateMap();
+                }
+            }
+            );
+        }
+    }
+    void setGaW(Capturable capt) {
+
+        if(capt.garrison!=null) {
+            GaW.infantrySize.setText(Integer.toString(capt.garrison.infantry));
+            GaW.archerySize.setText(Integer.toString(capt.garrison.archery));
+            GaW.cavalrySize.setText(Integer.toString(capt.garrison.cavalry));
+        }
+    }
     ImageIcon getIcon(int type, String owner) {
         if(owner == "blue") {
              switch(type) {
@@ -177,10 +219,11 @@ public class App implements KeyListener{
         switch(e.getKeyCode()) {
             case 10:
                     System.out.println("Next Round");
+                    updateMap();
                     break;
             case 27:
                     System.out.println("Deselect");
-                    this.BaR.setVisible(false); this.GaW.setVisible(false);
+                    this.BaR.setVisible(false); this.GaW.setVisible(false); selected = false;
                     break;
             default:
         }
